@@ -2,7 +2,7 @@
 """
 量子密信 DeepSeek 机器人 - 腾讯云函数 Web 函数版（带鉴权）
 部署方式：腾讯云 SCF Web 函数 + 函数URL
-依赖：Flask（SCF自带），HTTP请求用urllib零额外依赖
+依赖：仅 Flask（SCF自带），HTTP请求用urllib零额外依赖
 """
 import os
 import json
@@ -77,6 +77,7 @@ def call_deepseek(user_message: str) -> str:
         return f"DeepSeek API 调用失败（HTTP {e.code}），请联系管理员。"
     except Exception as e:
         logger.error(f"DeepSeek API 异常: {type(e).__name__}: {e}")
+        # 超时类异常
         if "timeout" in str(e).lower() or "timed out" in str(e).lower():
             return "抱歉，DeepSeek 响应超时，请稍后再试。"
         return "内部错误，请稍后再试。"
@@ -130,10 +131,12 @@ def webhook():
         return jsonify({"status": "error", "message": "无法解析请求"}), 400
 
     # 提取关键字段
+    msg_type = data.get("type", "")
     callback_url = data.get("callBackUrl", "")
     callback_method = data.get("callBackMethod", "POST")
     phone = data.get("phone", "")
     group_id = data.get("groupId", "")
+    robot_id = data.get("robotId", "")
     text_msg = data.get("textMsg", {})
     user_content = text_msg.get("content", "")
 
@@ -180,7 +183,3 @@ def index():
             "/health": "GET - 健康检查"
         }
     })
-
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=9000)
